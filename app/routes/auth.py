@@ -86,15 +86,27 @@ def signin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
 
     # Attach token to response as cookie
     response = JSONResponse({"msg": "Login successful"})
+    # response.set_cookie(
+    #     key="access_token",
+    #     value=token,
+    #     httponly=True,
+    #     samesite="none",
+    #     secure=True,   # set to True when using HTTPS WHN AM TRYIGN TO HOST
+    #     max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,   # cookie duration in seconds
+    #     expires=int(expire.timestamp())
+    # )
     response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        samesite="none",
-        secure=True,   # set to True when using HTTPS WHN AM TRYIGN TO HOST
-        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,   # cookie duration in seconds
-        expires=int(expire.timestamp())
-    )
+    key="access_token",
+    value=token,
+    httponly=True,          # protects from JavaScript access (XSS)
+    samesite="none",        # required if frontend + backend are on different domains
+    secure=True,            # ensures cookie is sent only over HTTPS
+    max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # lifetime in seconds
+    expires=int(expire.timestamp()),           # exact expiry
+    path="/",               # restricts cookie to your API path
+    domain="socialhub-backend.onrender.com" # set this to your backend domain (or leave None on localhost)
+)
+
     return response
 
 
