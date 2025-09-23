@@ -104,7 +104,7 @@ def signin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
     max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # lifetime in seconds
     expires=int(expire.timestamp()),           # exact expiry
     path="/",               # restricts cookie to your API path
-    domain="socialhub-backend.onrender.com" # set this to your backend domain (or leave None on localhost)
+    domain="socialhub-backend-se80.onrender.com" # set this to your backend domain (or leave None on localhost)
 )
 
     return response
