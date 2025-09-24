@@ -1,4 +1,3 @@
-# app/utils/auth.py
 from fastapi import Request, HTTPException, Depends
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
