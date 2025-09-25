@@ -148,6 +148,6 @@ def check_auth(access_token: str = Cookie(None)):
 # -------------------------------
 # GET CURRENT LOGGED-IN USER
 # -------------------------------
-@router.get("/", response_model=schemas.Profile)
+@router.get("/details", response_model=schemas.Profile)
 def me(user = Depends(get_current_user)):
     return user
