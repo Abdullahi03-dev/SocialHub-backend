@@ -13,16 +13,14 @@ def get_current_user(request: Request, db: Session = Depends(database.get_db)):
     
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
+        user_id = payload.get("id")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token payload")
-        
         # force cast to int safely
         try:
             user_id = int(user_id)
         except (ValueError, TypeError):
             raise HTTPException(status_code=401, detail="Invalid token subject")
-        
         # query the DB
         user = db.query(models.User).filter(models.User.id == user_id).first()
         if not user:

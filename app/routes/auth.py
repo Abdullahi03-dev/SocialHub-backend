@@ -150,6 +150,4 @@ def check_auth(access_token: str = Cookie(None)):
 # -------------------------------
 @router.get("/", response_model=schemas.Profile)
 def me(user = Depends(get_current_user)):
-    # Return the profile of the currently authenticated user.
-    # Uses the `get_current_user` utility function.
     return user

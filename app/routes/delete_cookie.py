@@ -27,6 +27,6 @@ def logout(response: Response):
         samesite="none",
         secure=True,   # must match how you originally set the cookie
         path="/",      # include this so deletion works across your API routes
-        domain="https://socialhub-backend-se80.onrender.com"  # must match the domain used in set_cookie
+        # domain="https://socialhub-backend-se80.onrender.com"  # must match the domain used in set_cookie
     )
     return {"message": "Logged out"}
