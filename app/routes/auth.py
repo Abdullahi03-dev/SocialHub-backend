@@ -113,15 +113,16 @@ def signin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
 # -------------------------------
 # FETCH USER BY EMAIL
 # 
-@router.post('/fetchbyemail', response_model=schemas.Profile)
-def get_user_by_email(request: schemas.idRequest, db: Session = Depends(database.get_db)):
-    if not request.id:
+@router.get('/fetchbyemail/{user_id}', response_model=schemas.Profile)
+def get_user_by_id(user_id: int, db: Session = Depends(database.get_db)):
+    if not user_id:
         raise HTTPException(status_code=400, detail="User ID is required")
 
-    user = db.query(models.User).filter(models.User.id == request.id).first()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail='USER NOT FOUND')
+        raise HTTPException(status_code=404, detail="USER NOT FOUND")
     return user
+
 
 
 
