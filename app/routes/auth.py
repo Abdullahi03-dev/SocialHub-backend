@@ -115,14 +115,14 @@ def signin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
 # 
 @router.post('/fetchbyemail', response_model=schemas.Profile)
 def get_user_by_email(request: schemas.idRequest, db: Session = Depends(database.get_db)):
-    """
-    Fetch a user's profile using their email.
-    Used when frontend already knows the email.
-    """
+    if not request.id:
+        raise HTTPException(status_code=400, detail="User ID is required")
+
     user = db.query(models.User).filter(models.User.id == request.id).first()
     if not user:
         raise HTTPException(status_code=404, detail='USER NOT FOUND')
     return user
+
 
 
 # -------------------------------
