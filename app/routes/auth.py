@@ -77,7 +77,7 @@ def signin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
     # Set token expiry
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     token_data = {
-        "sub": str(db_user.id),  
+        "id": str(db_user.id),  
         "email": db_user.email,   
         "role": db_user.role,    
         "exp": int(expire.timestamp())
