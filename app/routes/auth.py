@@ -150,4 +150,10 @@ def check_auth(access_token: str = Cookie(None)):
 # -------------------------------
 @router.get("/details", response_model=schemas.Profile)
 def me(user = Depends(get_current_user)):
-    return user
+    try:
+        return user
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        print("Error in /details:", str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
