@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Cookie
+from fastapi import APIRouter, Depends, HTTPException, Cookie, Query
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from fastapi.responses import JSONResponse
@@ -113,13 +113,14 @@ def signin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
 # -------------------------------
 # FETCH USER BY EMAIL
 # 
-@router.get('/fetchbyemail/{savedEmail}', response_model=schemas.Profile)
-def get_user_by_id(savedEmail: str, db: Session = Depends(database.get_db)):
-    if not savedEmail:
-        raise HTTPException(status_code=400, detail="User ID is required")
-    user = db.query(models.User).filter(models.User.email == savedEmail).first()
+@router.get('/fetchbyemail', response_model=schemas.Profile)
+def get_user_by_email(email: str = Query(...), db: Session = Depends(database.get_db)):
+    # """
+    # Fetch user by email (query parameter), excluding password.
+    # """
+    user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
-        raise HTTPException(status_code=404, detail="USER NOT FOUND")
+        raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
