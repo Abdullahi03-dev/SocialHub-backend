@@ -113,7 +113,7 @@ def signin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
 # -------------------------------
 # FETCH USER BY EMAIL
 # 
-@router.get('/fetchbyemail', response_model=schemas.Profile)
+@router.get('/fetchbyemail')
 def get_user_by_email(email: str = Query(...), db: Session = Depends(database.get_db)):
     # """
     # Fetch user by email (query parameter), excluding password.
