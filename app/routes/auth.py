@@ -1,20 +1,240 @@
-from fastapi import APIRouter, Depends, HTTPException, Cookie
+# from fastapi import APIRouter, Depends, HTTPException, Cookie
+# from sqlalchemy.orm import Session
+# from passlib.context import CryptContext
+# from fastapi.responses import JSONResponse
+# from jose import jwt, JWTError
+# from datetime import datetime, timedelta, timezone
+# from .. import schemas, models, database
+# # from ..utils.auth import get_current_user
+
+
+# # AUTH ROUTER
+
+# router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+# # -------------------------------
+# # PASSWORD HASHING CONFIGURATION ->HOW TO HASH PASSWORS
+# # -------------------------------
+# pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+
+# def get_password_hash(password: str):
+#     return pwd_context.hash(password)
+
+# def verify_password(plain_password: str, hashed_password: str):
+#     return pwd_context.verify(plain_password, hashed_password)
+
+
+# # -------------------------------
+# # SIGNUP ENDPOINT
+# # -------------------------------
+# @router.post('/signup')
+# async def SignUp(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+#     db_user = db.query(models.User).filter(models.User.email == user.email).first()
+#     if db_user:
+#         raise HTTPException(status_code=400, detail="Email already registered")
+
+#     hashed_password = get_password_hash(user.password)
+#     new_user = models.User(
+#         name=user.name,
+#         email=user.email,
+#         password=hashed_password,
+#         role='member',
+#         posts=0,
+#         created_at=datetime.utcnow()
+#     )
+#     db.add(new_user)
+#     db.commit()
+#     db.refresh(new_user)
+#     return {"msg": "User created successfully"}
+
+
+# # -------------------------------
+# # SIMPLE TEST ENDPOINT TO CHECK IF EVERYTHING IS WROKING
+# # -------------------------------
+# @router.post('/testing')
+# def testing():
+#     print('hello')
+
+
+# # -------------------------------
+# # JWT CONFIGURATION
+# # -------------------------------
+# SECRET_KEY = "supersecret"    
+# ALGORITHM = "HS256"
+# ACCESS_TOKEN_EXPIRE_MINUTES = 3600   # token validity in minutes
+
+
+# # -------------------------------
+# # SIGNIN ENDPOINT
+# # -------------------------------
+# @router.post("/signin")
+# def signin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
+#     db_user = db.query(models.User).filter(models.User.email == user.email).first()
+#     if not db_user or not verify_password(user.password, db_user.password):
+#         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+#     # Set token expiry
+#     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+#     token_data = {
+#         "id": int(db_user.id),  
+#         "email": db_user.email,   
+#         "role": db_user.role,    
+#         "exp": int(expire.timestamp())
+#     }
+#     token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+
+#     # Attach token to response as cookie
+#     response = JSONResponse({"msg": "Login successful"})
+#     # response.set_cookie(
+#     #     key="access_token",
+#     #     value=token,
+#     #     httponly=True,
+#     #     samesite="none",
+#     #     secure=True,   # set to True when using HTTPS WHN AM TRYIGN TO HOST
+#     #     max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,   # cookie duration in seconds
+#     #     expires=int(expire.timestamp())
+#     # )
+#     response.set_cookie(
+#     key="access_token",
+#     value=token,
+#     httponly=True,          # protects from JavaScript access (XSS)
+#     samesite="None",        # required if frontend + backend are on different domains
+#     secure=True,            # ensures cookie is sent only over HTTPS
+#     max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # lifetime in seconds
+#     expires=int(expire.timestamp()),           # exact expiry
+#     path="/",               # restricts cookie to your API path
+#     # domain="socialhub-backend-se80.onrender.com" # set this to your backend domain (or leave None on localhost)
+# )
+
+#     return response
+
+
+# # -------------------------------
+# # FETCH USER BY EMAIL
+# # 
+# @router.get('/fetchbyemail/{user_id}', response_model=schemas.Profile)
+# def get_user_by_id(user_id: int, db: Session = Depends(database.get_db)):
+#     if not user_id:
+#         raise HTTPException(status_code=400, detail="User ID is required")
+
+#     user = db.query(models.User).filter(models.User.id == user_id).first()
+#     if not user:
+#         raise HTTPException(status_code=404, detail="USER NOT FOUND")
+#     return user
+
+
+
+
+# # -------------------------------
+# # CHECK AUTH (TOKEN VALIDATION)
+# # -------------------------------
+# @router.get("/check-auth")
+# def check_auth(access_token: str = Cookie(None)):
+#     # """
+#     # Check if a user is authenticated.
+#     # - Looks for JWT in cookies.
+#     # - Returns True/False depending on validity.
+#     # """
+#     if not access_token:
+#         return {"authenticated": False}
+#     try:
+#         jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+#         return {"authenticated": True}
+#     except JWTError:
+#         return {"authenticated": False}
+
+
+# # -------------------------------
+# # GET CURRENT LOGGED-IN USER
+# # -------------------------------
+
+# from fastapi import Request, HTTPException, Depends
+# from jose import jwt, JWTError
+# from sqlalchemy.orm import Session
+# from .. import models, database, schemas
+
+
+# @router.get("/details", response_model=schemas.Profile)
+# def me(request: Request, db: Session = Depends(database.get_db)):
+#     try:
+#         # get token from cookie
+#         token = request.cookies.get("access_token")
+#         if not token:
+#             raise HTTPException(status_code=401, detail="Not authenticated")
+
+#         # decode token
+#         try:
+#             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         except JWTError:
+#             raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+#         user_id = payload.get("id")
+#         if not user_id:
+#             raise HTTPException(status_code=401, detail="Invalid token payload")
+
+#         # if your DB ID is int, cast it, else leave it
+#         try:
+#             user_id = int(user_id)  # remove if your DB uses String IDs
+#         except (ValueError, TypeError):
+#             raise HTTPException(status_code=401, detail="Invalid token subject")
+
+#         # fetch user
+#         user = db.query(models.User).filter(models.User.id == user_id).first()
+#         if not user:
+#             raise HTTPException(status_code=404, detail="User not found")
+
+#         return user
+
+#     except HTTPException as e:
+#         raise e
+#     except Exception as e:
+#         print("Error in /details:", str(e))
+#         raise HTTPException(status_code=500, detail="Internal server error")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from fastapi.responses import JSONResponse
 from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
 from .. import schemas, models, database
-from ..utils.auth import get_current_user
-
-
-# AUTH ROUTER
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-
 # -------------------------------
-# PASSWORD HASHING CONFIGURATION ->HOW TO HASH PASSWORS
+# PASSWORD HASHING (argon2)
 # -------------------------------
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
@@ -26,169 +246,89 @@ def verify_password(plain_password: str, hashed_password: str):
 
 
 # -------------------------------
-# SIGNUP ENDPOINT
-# -------------------------------
-@router.post('/signup')
-async def SignUp(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-
-    hashed_password = get_password_hash(user.password)
-    new_user = models.User(
-        name=user.name,
-        email=user.email,
-        password=hashed_password,
-        role='member',
-        posts=0,
-        created_at=datetime.utcnow()
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return {"msg": "User created successfully"}
-
-
-# -------------------------------
-# SIMPLE TEST ENDPOINT TO CHECK IF EVERYTHING IS WROKING
-# -------------------------------
-@router.post('/testing')
-def testing():
-    print('hello')
-
-
-# -------------------------------
 # JWT CONFIGURATION
 # -------------------------------
 SECRET_KEY = "supersecret"    
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 3600   # token validity in minutes
+ACCESS_TOKEN_EXPIRE_MINUTES = 3600
 
 
 # -------------------------------
-# SIGNIN ENDPOINT
+# SIGNUP
+# -------------------------------
+@router.post('/signup')
+async def signup(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    try:
+        db_user = db.query(models.User).filter(models.User.email == user.email).first()
+        if db_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+
+        hashed_password = get_password_hash(user.password)
+        new_user = models.User(
+            name=user.name,
+            email=user.email,
+            password=hashed_password,
+            role='member',
+            posts=0,
+            created_at=datetime.utcnow()
+        )
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+
+        return {"msg": "User created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Signup failed: {str(e)}")
+
+
+# -------------------------------
+# SIGNIN (returns JWT)
 # -------------------------------
 @router.post("/signin")
 def signin(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
-    if not db_user or not verify_password(user.password, db_user.password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    # Set token expiry
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    token_data = {
-        "id": int(db_user.id),  
-        "email": db_user.email,   
-        "role": db_user.role,    
-        "exp": int(expire.timestamp())
-    }
-    token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
-
-    # Attach token to response as cookie
-    response = JSONResponse({"msg": "Login successful"})
-    # response.set_cookie(
-    #     key="access_token",
-    #     value=token,
-    #     httponly=True,
-    #     samesite="none",
-    #     secure=True,   # set to True when using HTTPS WHN AM TRYIGN TO HOST
-    #     max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,   # cookie duration in seconds
-    #     expires=int(expire.timestamp())
-    # )
-    response.set_cookie(
-    key="access_token",
-    value=token,
-    httponly=True,          # protects from JavaScript access (XSS)
-    samesite="none",        # required if frontend + backend are on different domains
-    secure=True,            # ensures cookie is sent only over HTTPS
-    max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # lifetime in seconds
-    expires=int(expire.timestamp()),           # exact expiry
-    path="/",               # restricts cookie to your API path
-    # domain="socialhub-backend-se80.onrender.com" # set this to your backend domain (or leave None on localhost)
-)
-
-    return response
-
-
-# -------------------------------
-# FETCH USER BY EMAIL
-# 
-@router.get('/fetchbyemail/{user_id}', response_model=schemas.Profile)
-def get_user_by_id(user_id: int, db: Session = Depends(database.get_db)):
-    if not user_id:
-        raise HTTPException(status_code=400, detail="User ID is required")
-
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="USER NOT FOUND")
-    return user
-
-
-
-
-# -------------------------------
-# CHECK AUTH (TOKEN VALIDATION)
-# -------------------------------
-@router.get("/check-auth")
-def check_auth(access_token: str = Cookie(None)):
-    # """
-    # Check if a user is authenticated.
-    # - Looks for JWT in cookies.
-    # - Returns True/False depending on validity.
-    # """
-    if not access_token:
-        return {"authenticated": False}
     try:
-        jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
-        return {"authenticated": True}
-    except JWTError:
-        return {"authenticated": False}
+        db_user = db.query(models.User).filter(models.User.email == user.email).first()
+        if not db_user or not verify_password(user.password, db_user.password):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        token_data = {
+            "id": int(db_user.id),
+            "email": db_user.email,
+            "role": db_user.role,
+            "exp": int(expire.timestamp())
+        }
+        token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+
+        return {"msg": "Login successful", "token": token}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Signin failed: {str(e)}")
 
 
 # -------------------------------
-# GET CURRENT LOGGED-IN USER
+# GET CURRENT LOGGED-IN USER (decode from Authorization header)
 # -------------------------------
-
-from fastapi import Request, HTTPException, Depends
-from jose import jwt, JWTError
-from sqlalchemy.orm import Session
-from .. import models, database, schemas
-
-
 @router.get("/details", response_model=schemas.Profile)
 def me(request: Request, db: Session = Depends(database.get_db)):
     try:
-        # get token from cookie
-        token = request.cookies.get("access_token")
-        if not token:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Not authenticated")
 
-        # decode token
-        try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        except JWTError:
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
+        token = auth_header.split(" ")[1]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
         user_id = payload.get("id")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token payload")
 
-        # if your DB ID is int, cast it, else leave it
-        try:
-            user_id = int(user_id)  # remove if your DB uses String IDs
-        except (ValueError, TypeError):
-            raise HTTPException(status_code=401, detail="Invalid token subject")
-
-        # fetch user
-        user = db.query(models.User).filter(models.User.id == user_id).first()
+        user = db.query(models.User).filter(models.User.id == int(user_id)).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
         return user
-
-    except HTTPException as e:
-        raise e
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     except Exception as e:
-        print("Error in /details:", str(e))
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch user: {str(e)}")
 
