@@ -68,9 +68,16 @@ def get_posts(db: Session = Depends(get_db)):
 
 
 
-@router.get("/getallpostsForUser/{id}", response_model=List[PostSchema])
-def get_posts(id:int,db: Session = Depends(get_db)):
-    posts = db.query(PostModel).filter(PostModel.user_id==id).all()
+@router.get("/getallpostsForUser/{savedEmail}", response_model=List[PostSchema])
+def get_posts(savedEmail: str, db: Session = Depends(get_db)):
+    # Step 1: Find the user by email
+    user = db.query(User).filter(User.email == savedEmail).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Step 2: Get all posts for that user's ID
+    posts = db.query(PostModel).filter(PostModel.user_id == user.id).all()
     if not posts:
         raise HTTPException(status_code=404, detail="Posts not found")
+    
     return posts
