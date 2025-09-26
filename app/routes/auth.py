@@ -148,12 +148,47 @@ def check_auth(access_token: str = Cookie(None)):
 # -------------------------------
 # GET CURRENT LOGGED-IN USER
 # -------------------------------
+
+from fastapi import Request, HTTPException, Depends
+from jose import jwt, JWTError
+from sqlalchemy.orm import Session
+from .. import models, database, schemas
+
+
 @router.get("/details", response_model=schemas.Profile)
-def me(user = Depends(get_current_user)):
+def me(request: Request, db: Session = Depends(database.get_db)):
     try:
+        # get token from cookie
+        token = request.cookies.get("access_token")
+        if not token:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+
+        # decode token
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+        user_id = payload.get("id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+
+        # if your DB ID is int, cast it, else leave it
+        try:
+            user_id = int(user_id)  # remove if your DB uses String IDs
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=401, detail="Invalid token subject")
+
+        # fetch user
+        user = db.query(models.User).filter(models.User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
         return user
+
     except HTTPException as e:
         raise e
     except Exception as e:
         print("Error in /details:", str(e))
         raise HTTPException(status_code=500, detail="Internal server error")
+
