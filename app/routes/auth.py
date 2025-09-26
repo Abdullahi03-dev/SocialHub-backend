@@ -16,7 +16,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 # -------------------------------
 # PASSWORD HASHING CONFIGURATION ->HOW TO HASH PASSWORS
 # -------------------------------
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 def get_password_hash(password: str):
     return pwd_context.hash(password)
