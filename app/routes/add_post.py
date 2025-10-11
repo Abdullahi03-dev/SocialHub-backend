@@ -1,18 +1,17 @@
-from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException
-from sqlalchemy.orm import Session
-from typing import Optional, List
-import shutil, os, uuid
-from pathlib import Path
-from ..database import get_db
-from ..models import User, Post as PostModel
+from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException 
+from sqlalchemy.orm import Session 
+from typing import Optional, List 
+import shutil, os
+# from pathlib import Path 
+from ..database import get_db 
+from ..models import User, Post as PostModel 
 from ..schemas import PostWithUsers as PostSchema
 
 router = APIRouter()
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-
-#Upload post
+# Upload post
 @router.post("/upload", response_model=PostSchema)
 async def upload_post(
     email: str = Form(...),
@@ -26,7 +25,7 @@ async def upload_post(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Check optional image
+    # Handle image upload
     file_path = None
     if image:
         allowed_extensions = ["jpg", "jpeg", "png"]
@@ -34,12 +33,15 @@ async def upload_post(
         if ext not in allowed_extensions:
             raise HTTPException(status_code=400, detail="Invalid image type. Only JPG/PNG allowed")
 
-        filename = f"{uuid.uuid4()}_{image.filename}"
-        file_path = os.path.join(UPLOAD_DIR,filename).replace('\\','/')
+        # Use the exact original file name
+        filename = image.filename
+        file_path = os.path.join(UPLOAD_DIR, filename).replace("\\", "/")
+
+        # Save image to uploads folder
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(image.file, buffer)
 
-    #  Create post
+    # Create post
     new_post = PostModel(
         content=content,
         hashtags=tags,
@@ -49,7 +51,7 @@ async def upload_post(
     )
 
     db.add(new_post)
-    # update user post count
+    # Update user's post count
     user.posts += 1
     db.commit()
     db.refresh(new_post)
