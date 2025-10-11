@@ -1,15 +1,100 @@
+# from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException 
+# from sqlalchemy.orm import Session 
+# from typing import Optional, List 
+# import shutil, os
+# # from pathlib import Path 
+# from ..database import get_db 
+# from ..models import User, Post as PostModel 
+# from ..schemas import PostWithUsers as PostSchema
+
+# router = APIRouter()
+# UPLOAD_DIR = "uploads"
+# os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# # Upload post
+# @router.post("/upload", response_model=PostSchema)
+# async def upload_post(
+#     email: str = Form(...),
+#     content: str = Form(...),
+#     tags: str = Form(""),
+#     image: Optional[UploadFile] = File(None),
+#     db: Session = Depends(get_db)
+# ):
+#     # Find user by email
+#     user = db.query(User).filter(User.email == email).first()
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+
+#     # Handle image upload
+#     file_path = None
+#     if image:
+#         allowed_extensions = ["jpg", "jpeg", "png"]
+#         ext = image.filename.split(".")[-1].lower()
+#         if ext not in allowed_extensions:
+#             raise HTTPException(status_code=400, detail="Invalid image type. Only JPG/PNG allowed")
+
+#         # Use the exact original file name
+#         filename = image.filename
+#         file_path = os.path.join(UPLOAD_DIR, filename).replace("\\", "/")
+
+#         # Save image to uploads folder
+#         with open(file_path, "wb") as buffer:
+#             shutil.copyfileobj(image.file, buffer)
+
+#     # Create post
+#     new_post = PostModel(
+#         content=content,
+#         hashtags=tags,
+#         image=file_path,
+#         likes=0,
+#         user_id=user.id
+#     )
+
+#     db.add(new_post)
+#     # Update user's post count
+#     user.posts += 1
+#     db.commit()
+#     db.refresh(new_post)
+
+#     return new_post
+
+
+# # Get all posts with user info
+# @router.get("/getallposts", response_model=List[PostSchema])
+# def get_posts(db: Session = Depends(get_db)):
+#     posts = db.query(PostModel).all()
+#     if not posts:
+#         raise HTTPException(status_code=404, detail="User not found")
+#     return posts
+
+
+
+
+# @router.get("/getallpostsForUser/{savedEmail}", response_model=List[PostSchema])
+# def get_posts(savedEmail: str, db: Session = Depends(get_db)):
+#     # Step 1: Find the user by email
+#     user = db.query(User).filter(User.email == savedEmail).first()
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found")
+    
+#     # Step 2: Get all posts for that user's ID
+#     posts = db.query(PostModel).filter(PostModel.user_id == user.id).all()
+#     if not posts:
+#         raise HTTPException(status_code=404, detail="Posts not found")
+#     return postsfrom fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException 
+
+
 from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException 
 from sqlalchemy.orm import Session 
 from typing import Optional, List 
-import shutil, os
-# from pathlib import Path 
 from ..database import get_db 
 from ..models import User, Post as PostModel 
 from ..schemas import PostWithUsers as PostSchema
+import cloudinary
+import cloudinary.uploader
+from ..cloudinary_config import cloudinary  # import the config file
 
 router = APIRouter()
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Upload post
 @router.post("/upload", response_model=PostSchema)
@@ -26,26 +111,29 @@ async def upload_post(
         raise HTTPException(status_code=404, detail="User not found")
 
     # Handle image upload
-    file_path = None
+    image_url = None
     if image:
         allowed_extensions = ["jpg", "jpeg", "png"]
         ext = image.filename.split(".")[-1].lower()
         if ext not in allowed_extensions:
             raise HTTPException(status_code=400, detail="Invalid image type. Only JPG/PNG allowed")
 
-        # Use the exact original file name
-        filename = image.filename
-        file_path = os.path.join(UPLOAD_DIR, filename).replace("\\", "/")
+        # Upload image directly to Cloudinary
+        upload_result = cloudinary.uploader.upload(
+            image.file,
+            folder="blog_posts",  # optional folder name in Cloudinary
+            public_id=image.filename.split(".")[0],  # use filename as ID
+            overwrite=True
+        )
 
-        # Save image to uploads folder
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
+        # Get the URL of the uploaded image
+        image_url = upload_result.get("secure_url")
 
     # Create post
     new_post = PostModel(
         content=content,
         hashtags=tags,
-        image=file_path,
+        image=image_url,
         likes=0,
         user_id=user.id
     )
@@ -66,8 +154,6 @@ def get_posts(db: Session = Depends(get_db)):
     if not posts:
         raise HTTPException(status_code=404, detail="User not found")
     return posts
-
-
 
 
 @router.get("/getallpostsForUser/{savedEmail}", response_model=List[PostSchema])
